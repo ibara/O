@@ -47,7 +47,7 @@ xorl(const char *line)
 }
 
 static void
-xor(const char *line)
+one(const char *line)
 {
 
 	if (xorq(line))
@@ -60,13 +60,14 @@ xor(const char *line)
 }
 
 static int
-nostack(const char *line, FILE *fp)
+mov(const char *line, FILE *fp)
 {
-	char *line2 = NULL, *line3 = NULL, *line4 = NULL;
+	char *line2 = NULL, *line3 = NULL;
 	size_t size = 0;
 
-	if (strcmp("\tpushq %rbp\n", line) != 0) {
-		xor(line);
+	if (strncmp("\tmovl %e", line, 8) != 0 &&
+	    strncmp("\tmovq %r", line, 8) != 0) {
+		one(line);
 
 		return 0;
 	}
@@ -77,9 +78,10 @@ nostack(const char *line, FILE *fp)
 		return 1;
 	}
 
-	if (strcmp("\tmovq %rsp, %rbp\n", line2) != 0) {
+	if (strncmp("\tmovl %e", line2, 8) != 0 &&
+	    strncmp("\tmovq %r", line2, 8) != 0) {
 		(void) fputs(line, stdout);
-		xor(line2);
+		one(line2);
 
 		free(line2);
 
@@ -95,37 +97,46 @@ nostack(const char *line, FILE *fp)
 		return 1;
 	}
 
-	if (!strcmp("\tleave\n", line3)) {
+	if (strncmp("\tmovl", line3, 5) != 0 &&
+	    strncmp("\tmovq", line3, 5) != 0) {
+		(void) fputs(line, stdout);
+		(void) fputs(line2, stdout);
+		one(line3);
+
 		free(line3);
 		free(line2);
 
 		return 0;
 	}
 
-	if (!strncmp("\tsub", line3, 4) || !strncmp("\tpush", line3, 5)) {
-		(void) fputs(line, stdout);
-		(void) fputs(line2, stdout);
+	if (line[5] == line2[5] &&
+	    line[7] == line2[13] &&
+	    line[8] == line2[14] &&
+	    line[9] == line2[15] &&
+	    line[13] == line2[7] &&
+	    line[14] == line2[8] &&
+	    line[15] == line2[9] &&
+	    line[14] == line3[14] &&
+	    line[15] == line3[15]) {
 		(void) fputs(line3, stdout);
 	} else {
-		xor(line3);
-
-		while (getline(&line4, &size, fp) != -1) {
-			if (!strcmp("\tleave\n", line4)) {
-				free(line4);
-				free(line3);
-				free(line2);
-
-				return 0;
-			} else {
-				xor(line4);
-			}
-		}
-
-		free(line4);
+		(void) fputs(line, stdout);
+		(void) fputs(line2, stdout);
+		one(line3);
 	}
 
 	free(line3);
 	free(line2);
+
+	return 0;
+}
+
+static int
+three(const char *line, FILE *fp)
+{
+
+	if (mov(line, fp) == 1)
+		return 1;
 
 	return 0;
 }
@@ -137,12 +148,8 @@ O(FILE *fp)
 	size_t size = 0;
 
 	while (getline(&line, &size, fp) != -1) {
-#ifdef SAFE
-		xor(line);
-#else
-		if (nostack(line, fp) == 1)
+		if (three(line, fp) == 1)
 			break;
-#endif
 	}
 
 	free(line);

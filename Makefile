@@ -4,7 +4,6 @@ PREFIX ?=	/usr/local
 
 CC ?=		cc
 CFLAGS ?=	-g -O2
-CFLAGS +=	-DSAFE
 
 PROG =	O
 OBJS =	O.o
