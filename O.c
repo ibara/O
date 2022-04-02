@@ -50,14 +50,14 @@ xorq(struct peephole *window)
 		return 0;
 
 	if (!strncmp("\tmovq $0, %r", window->line1, 12)) {
-		if (strlen(window->line1) != 15) {
-			(void) fputs("O: error: xorq failed\n", stderr);
-
-			exit(1);
-		}
+		if (strlen(window->line1) < 14)
+			return 0;
 
 		r1a = window->line1[12];
 		r1b = window->line1[13];
+
+		if (r1b == '\n')
+			r1b = ' ';
 
 		(void) snprintf(buf, sizeof(buf), "\txorq %%r%c%c, %%r%c%c\n",
 		    r1a, r1b, r1a, r1b);
@@ -80,11 +80,8 @@ xorl(struct peephole *window)
 		return 0;
 
 	if (!strncmp("\tmovl $0, %e", window->line1, 12)) {
-		if (strlen(window->line1) != 15) {
-			(void) fputs("O: error: xorl failed\n", stderr);
-
-			exit(1);
-		}
+		if (strlen(window->line1) != 15)
+			return 0;
 
 		e1a = window->line1[12];
 		e1b = window->line1[13];
@@ -96,9 +93,388 @@ xorl(struct peephole *window)
 		window->line1 = xstrdup(buf);
 
 		return 1;
+	} else if (!strncmp("\tmovl $0, %r", window->line1, 12)) {
+		if (strlen(window->line1) < 14)
+			return 0;
+
+		e1a = window->line1[12];
+		e1b = window->line1[13];
+
+		if (e1b == 'd') {
+			(void) snprintf(buf, sizeof(buf),
+			    "\txorl %%r%cd, %%r%cd\n", e1a, e1a);
+		} else {
+			(void) snprintf(buf, sizeof(buf),
+			    "\txorl %%r%c%cd, %%r%c%cd\n", e1a, e1b, e1a, e1b);
+		}
+
+		free(window->line1);
+		window->line1 = xstrdup(buf);
+
+		return 1;
 	}
 
 	return 0;
+}
+
+static int
+imulq(struct peephole *window)
+{
+	char buf[32], r1a, r1b, r1c;
+
+	if (window->line1 == NULL)
+		return 0;
+
+	if (!strncmp("\timulq $", window->line1, 8)) {
+		if (strlen(window->line1) < 19)
+			return 0;
+
+		r1a = window->line1[strlen(window->line1) - 10];
+		r1b = window->line1[strlen(window->line1) - 9];
+		r1c = window->line1[strlen(window->line1) - 8];
+
+		if (r1a == ' ' && r1b == '%' && r1c == 'r') {
+			r1a = r1c;
+			r1b = window->line1[strlen(window->line1) - 7];
+
+			if (window->line1[strlen(window->line1) - 3] != r1a ||
+			    window->line1[strlen(window->line1) - 2] != r1b) {
+				return 0;
+			}
+
+			r1c = ' ';
+		} else if (window->line1[strlen(window->line1) - 4] != r1a ||
+		    window->line1[strlen(window->line1) - 3] != r1b ||
+		    window->line1[strlen(window->line1) - 2] != r1c) {
+			return 0;
+		}
+
+		switch (window->line1[8]) {
+		case '0':
+			if (window->line1[9] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\txorq %%%c%c%c, %%%c%c%c\n", r1a, r1b,
+				    r1c, r1a, r1b, r1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '1':
+			if (window->line1[9] == ',') {
+				free(window->line1);
+				window->line1 = NULL;
+
+				return 1;
+			} else if (window->line1[9] == '6' &&
+			    window->line1[10] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $4, %%%c%c%c\n", r1a, r1b, r1c);
+			} else if (window->line1[9] == '2' &&
+			    window->line1[10] == '8' &&
+			    window->line1[11] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $7, %%%c%c%c\n", r1a, r1b, r1c);
+			} else if (window->line1[9] == '0' &&
+			    window->line1[10] == '2' &&
+			    window->line1[11] == '4' &&
+			    window->line1[12] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $10, %%%c%c%c\n", r1a, r1b, r1c);
+			} else if (window->line1[9] == '6' &&
+			    window->line1[10] == '3' &&
+			    window->line1[11] == '8' &&
+			    window->line1[12] == '4' &&
+			    window->line1[13] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $14, %%%c%c%c\n", r1a, r1b, r1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '2':
+			if (window->line1[9] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq %%%c%c%c\n", r1a, r1b, r1c);
+			} else if (window->line1[9] == '5' &&
+			    window->line1[10] == '6' &&
+			    window->line1[11] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $8, %%%c%c%c\n", r1a, r1b, r1c);
+			} else if (window->line1[9] == '0' &&
+			    window->line1[10] == '4' &&
+			    window->line1[11] == '8' &&
+			    window->line1[12] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $11, %%%c%c%c\n", r1a, r1b, r1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '3':
+			if (window->line1[9] == '2' &&
+			    window->line1[10] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $5, %%%c%c%c\n", r1a, r1b, r1c);
+			} else if (window->line1[9] == '2' &&
+			    window->line1[10] == '7' &&
+			    window->line1[11] == '6' &&
+			    window->line1[12] == '8' &&
+			    window->line1[13] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $15, %%%c%c%c\n", r1a, r1b, r1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '4':
+			if (window->line1[9] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $2, %%%c%c%c\n", r1a, r1b, r1c);
+			} else if (window->line1[9] == '0' &&
+			    window->line1[10] == '9' &&
+			    window->line1[11] == '6' &&
+			    window->line1[12] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $12, %%%c%c%c\n", r1a, r1b, r1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '5':
+			if (window->line1[9] == '1' &&
+			    window->line1[10] == '2' &&
+			    window->line1[11] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $9, %%%c%c%c\n", r1a, r1b, r1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '6':
+			if (window->line1[9] == '4' &&
+			    window->line1[10] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $6, %%%c%c%c\n", r1a, r1b, r1c);
+			} else if (window->line1[9] == '5' &&
+			    window->line1[10] == '5' &&
+			    window->line1[11] == '3' &&
+			    window->line1[12] == '6' &&
+			    window->line1[13] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $16, %%%c%c%c\n", r1a, r1b, r1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '8':
+			if (window->line1[9] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $3, %%%c%c%c\n", r1a, r1b, r1c);
+			} else if (window->line1[9] == '1' &&
+			    window->line1[10] == '9' &&
+			    window->line1[11] == '2' &&
+			    window->line1[12] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsalq $13, %%%c%c%c\n", r1a, r1b, r1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		default:
+			return 0;
+		}
+	}
+
+	return 0;
+
+success:
+	free(window->line1);
+	window->line1 = xstrdup(buf);
+
+	return 1;
+}
+
+static int
+imull(struct peephole *window)
+{
+	char buf[32], e1a, e1b, e1c;
+
+	if (window->line1 == NULL)
+		return 0;
+
+	if (!strncmp("\timull $", window->line1, 8)) {
+		if (strlen(window->line1) < 21)
+			return 0;
+
+		e1a = window->line1[strlen(window->line1) - 10];
+		e1b = window->line1[strlen(window->line1) - 9];
+		e1c = window->line1[strlen(window->line1) - 8];
+
+		if (window->line1[strlen(window->line1) - 4] != e1a ||
+		    window->line1[strlen(window->line1) - 3] != e1b ||
+		    window->line1[strlen(window->line1) - 2] != e1c) {
+			return 0;
+		}
+
+		switch (window->line1[8]) {
+		case '0':
+			if (window->line1[9] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\txorl %%%c%c%c, %%%c%c%c\n", e1a, e1b,
+				    e1c, e1a, e1b, e1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '1':
+			if (window->line1[9] == ',') {
+				free(window->line1);
+				window->line1 = NULL;
+
+				return 1;
+			} else if (window->line1[9] == '6' &&
+			    window->line1[10] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $4, %%%c%c%c\n", e1a, e1b, e1c);
+			} else if (window->line1[9] == '2' &&
+			    window->line1[10] == '8' &&
+			    window->line1[11] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $7, %%%c%c%c\n", e1a, e1b, e1c);
+			} else if (window->line1[9] == '0' &&
+			    window->line1[10] == '2' &&
+			    window->line1[11] == '4' &&
+			    window->line1[12] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $10, %%%c%c%c\n", e1a, e1b, e1c);
+			} else if (window->line1[9] == '6' &&
+			    window->line1[10] == '3' &&
+			    window->line1[11] == '8' &&
+			    window->line1[12] == '4' &&
+			    window->line1[13] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $14, %%%c%c%c\n", e1a, e1b, e1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '2':
+			if (window->line1[9] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall %%%c%c%c\n", e1a, e1b, e1c);
+			} else if (window->line1[9] == '5' &&
+			    window->line1[10] == '6' &&
+			    window->line1[11] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $8, %%%c%c%c\n", e1a, e1b, e1c);
+			} else if (window->line1[9] == '0' &&
+			    window->line1[10] == '4' &&
+			    window->line1[11] == '8' &&
+			    window->line1[12] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $11, %%%c%c%c\n", e1a, e1b, e1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '3':
+			if (window->line1[9] == '2' &&
+			    window->line1[10] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $5, %%%c%c%c\n", e1a, e1b, e1c);
+			} else if (window->line1[9] == '2' &&
+			    window->line1[10] == '7' &&
+			    window->line1[11] == '6' &&
+			    window->line1[12] == '8' &&
+			    window->line1[13] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $15, %%%c%c%c\n", e1a, e1b, e1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '4':
+			if (window->line1[9] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $2, %%%c%c%c\n", e1a, e1b, e1c);
+			} else if (window->line1[9] == '0' &&
+			    window->line1[10] == '9' &&
+			    window->line1[11] == '6' &&
+			    window->line1[12] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $12, %%%c%c%c\n", e1a, e1b, e1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '5':
+			if (window->line1[9] == '1' &&
+			    window->line1[10] == '2' &&
+			    window->line1[11] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $9, %%%c%c%c\n", e1a, e1b, e1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '6':
+			if (window->line1[9] == '4' &&
+			    window->line1[10] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $6, %%%c%c%c\n", e1a, e1b, e1c);
+			} else if (window->line1[9] == '5' &&
+			    window->line1[10] == '5' &&
+			    window->line1[11] == '3' &&
+			    window->line1[12] == '6' &&
+			    window->line1[13] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $16, %%%c%c%c\n", e1a, e1b, e1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		case '8':
+			if (window->line1[9] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $3, %%%c%c%c\n", e1a, e1b, e1c);
+			} else if (window->line1[9] == '1' &&
+			    window->line1[10] == '9' &&
+			    window->line1[11] == '2' &&
+			    window->line1[12] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tsall $13, %%%c%c%c\n", e1a, e1b, e1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
+		default:
+			return 0;
+		}
+	}
+
+	return 0;
+
+success:
+	free(window->line1);
+	window->line1 = xstrdup(buf);
+
+	return 1;
 }
 
 static void
@@ -110,6 +486,11 @@ one(struct peephole *window)
 
 	if (xorl(window))
 		return;
+
+	if (imulq(window))
+		return;
+
+	(void) imull(window);
 }
 
 static int
@@ -137,6 +518,9 @@ mov(struct peephole *window)
 	    strncmp("\tmovq $0, %r", window->line3, 12) != 0) {
 		return 0;
 	}
+
+	if (strlen(window->line1) < 16 || strlen(window->line2) < 16)
+		return 0;
 
 	if (window->line1[4] == window->line2[4] &&
 	    window->line1[7] == window->line2[13] &&
@@ -221,7 +605,8 @@ again:
 				goto again;
 		}
 
-		(void) fputs(window.line1, stdout);
+		if (window.line1 != NULL)
+			(void) fputs(window.line1, stdout);
 
 		shiftwindow(&window);
 	}
@@ -232,7 +617,8 @@ again:
 	while (window.line1 != NULL) {
 		one(&window);
 
-		(void) fputs(window.line1, stdout);
+		if (window.line1 != NULL)
+			(void) fputs(window.line1, stdout);
 
 		shiftwindow(&window);
 	}

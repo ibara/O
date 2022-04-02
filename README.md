@@ -16,16 +16,18 @@ Building
 --------
 Just run `make`.
 
-The only non-C89 function is
-[`getline(3)`](https://man.openbsd.org/getline.3).
+The only non-C89 functions are
+[`getline(3)`](https://man.openbsd.org/getline.3)
+and
+[`snprintf(3)`](https://man.openbsd.org/snprintf.3).
 
 Running
 -------
 ```
-usage: O file.s
+usage: O in.s [-o out.s]
 ```
 
-Output is listed on `stdout`.
+Output is listed on `stdout` unless `-o` is passed on the command line.
 
 You can pass this to an assembler using something like:
 ```
