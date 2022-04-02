@@ -8,8 +8,9 @@ It is meant to be used in conjunction with
 
 Why?
 ----
-`O` is the subject of a
-[blog post](https://briancallahan.net/blog/20220330.html).
+`O` is the subject of two
+[blog](https://briancallahan.net/blog/20220330.html)
+[posts](https://briancallahan.net/blog/20220402.html).
 
 Building
 --------
