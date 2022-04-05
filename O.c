@@ -150,6 +150,16 @@ imulq(struct peephole *window)
 		}
 
 		switch (window->line1[8]) {
+		case '-':
+			if (window->line1[9] == '1' &&
+			    window->line1[10] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tnegq %%%c%c%c\n", r1a, r1b, r1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
 		case '0':
 			if (window->line1[9] == ',') {
 				(void) snprintf(buf, sizeof(buf),
@@ -325,6 +335,16 @@ imull(struct peephole *window)
 		}
 
 		switch (window->line1[8]) {
+		case '-':
+			if (window->line1[9] == '1' &&
+			    window->line1[10] == ',') {
+				(void) snprintf(buf, sizeof(buf),
+				    "\tnegl %%%c%c%c\n", e1a, e1b, e1c);
+			} else {
+				return 0;
+			}
+
+			goto success;
 		case '0':
 			if (window->line1[9] == ',') {
 				(void) snprintf(buf, sizeof(buf),
