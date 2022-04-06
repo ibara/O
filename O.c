@@ -56,11 +56,16 @@ xorq(struct peephole *window)
 		r1a = window->line1[12];
 		r1b = window->line1[13];
 
-		if (r1b == '\n')
-			r1b = ' ';
-
-		(void) snprintf(buf, sizeof(buf), "\txorq %%r%c%c, %%r%c%c\n",
-		    r1a, r1b, r1a, r1b);
+		if (r1b == '\n') {
+			(void) snprintf(buf, sizeof(buf),
+			    "\txorl %%r%cd, %%r%cd\n", r1a, r1a);
+		} else if (r1a == '1') {
+			(void) snprintf(buf, sizeof(buf),
+			    "\txorl %%r%c%cd, %%r%c%cd\n", r1a, r1b, r1a, r1b);
+		} else {
+			(void) snprintf(buf, sizeof(buf),
+			    "\txorl %%e%c%c, %%e%c%c\n", r1a, r1b, r1a, r1b);
+		}
 
 		free(window->line1);
 		window->line1 = xstrdup(buf);
