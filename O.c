@@ -123,6 +123,162 @@ xorl(struct peephole *window)
 }
 
 static int
+incq(struct peephole *window)
+{
+	char buf[32], r1a, r1b;
+
+	if (window->line1 == NULL)
+		return 0;
+
+	if (!strncmp("\taddq $1, %r", window->line1, 12)) {
+		if (strlen(window->line1) < 14)
+			return 0;
+
+		r1a = window->line1[12];
+		r1b = window->line1[13];
+
+		if (r1b == '\n') {
+			(void) snprintf(buf, sizeof(buf), "\tincq %%r%c\n",
+			    r1a);
+		} else {
+			(void) snprintf(buf, sizeof(buf), "\tincq %%r%c%c\n",
+			    r1a, r1b);
+		}
+
+		free(window->line1);
+		window->line1 = xstrdup(buf);
+
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
+incl(struct peephole *window)
+{
+	char buf[32], e1a, e1b;
+
+	if (window->line1 == NULL)
+		return 0;
+
+	if (!strncmp("\taddl $1, %e", window->line1, 12)) {
+		if (strlen(window->line1) != 15)
+			return 0;
+
+		e1a = window->line1[12];
+		e1b = window->line1[13];
+
+		(void) snprintf(buf, sizeof(buf), "\tincl %%e%c%c\n", e1a,
+		    e1b);
+
+		free(window->line1);
+		window->line1 = xstrdup(buf);
+
+		return 1;
+	} else if (!strncmp("\taddl $1, %r", window->line1, 12)) {
+		if (strlen(window->line1) < 14)
+			return 0;
+
+		e1a = window->line1[12];
+		e1b = window->line1[13];
+
+		if (e1b == 'd') {
+			(void) snprintf(buf, sizeof(buf), "\tincl %%r%cd\n",
+			    e1a);
+		} else {
+			(void) snprintf(buf, sizeof(buf), "\tincl %%r%c%cd\n",
+			    e1a, e1b);
+		}
+
+		free(window->line1);
+		window->line1 = xstrdup(buf);
+
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
+decq(struct peephole *window)
+{
+	char buf[32], r1a, r1b;
+
+	if (window->line1 == NULL)
+		return 0;
+
+	if (!strncmp("\tsubq $1, %r", window->line1, 12)) {
+		if (strlen(window->line1) < 14)
+			return 0;
+
+		r1a = window->line1[12];
+		r1b = window->line1[13];
+
+		if (r1b == '\n') {
+			(void) snprintf(buf, sizeof(buf), "\tdecq %%r%c\n",
+			    r1a);
+		} else {
+			(void) snprintf(buf, sizeof(buf), "\tdecq %%r%c%c\n",
+			    r1a, r1b);
+		}
+
+		free(window->line1);
+		window->line1 = xstrdup(buf);
+
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
+decl(struct peephole *window)
+{
+	char buf[32], e1a, e1b;
+
+	if (window->line1 == NULL)
+		return 0;
+
+	if (!strncmp("\tsubl $1, %e", window->line1, 12)) {
+		if (strlen(window->line1) != 15)
+			return 0;
+
+		e1a = window->line1[12];
+		e1b = window->line1[13];
+
+		(void) snprintf(buf, sizeof(buf), "\tdecl %%e%c%c\n", e1a,
+		    e1b);
+
+		free(window->line1);
+		window->line1 = xstrdup(buf);
+
+		return 1;
+	} else if (!strncmp("\tsubl $1, %r", window->line1, 12)) {
+		if (strlen(window->line1) < 14)
+			return 0;
+
+		e1a = window->line1[12];
+		e1b = window->line1[13];
+
+		if (e1b == 'd') {
+			(void) snprintf(buf, sizeof(buf), "\tdecl %%r%cd\n",
+			    e1a);
+		} else {
+			(void) snprintf(buf, sizeof(buf), "\tdecl %%r%c%cd\n",
+			    e1a, e1b);
+		}
+
+		free(window->line1);
+		window->line1 = xstrdup(buf);
+
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
 imulq(struct peephole *window)
 {
 	char buf[32], r1a, r1b, r1c;
@@ -510,6 +666,18 @@ one(struct peephole *window)
 		return;
 
 	if (xorl(window))
+		return;
+
+	if (incq(window))
+		return;
+
+	if (incl(window))
+		return;
+
+	if (decq(window))
+		return;
+
+	if (decl(window))
 		return;
 
 	if (imulq(window))
