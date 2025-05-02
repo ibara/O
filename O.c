@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2022 Brian Callahan <bcallah@openbsd.org>
+ * Copyright (c) 2022, 2025 Brian Callahan <bcallah@openbsd.org>
  *
  * Permission to use, copy, modify, and distribute this software for any
  * purpose with or without fee is hereby granted, provided that the above
@@ -740,8 +740,53 @@ mov(struct peephole *window)
 }
 
 static int
+xchgq(struct peephole *window)
+{
+
+	if (window->line1 == NULL || window->line2 == NULL ||
+	    window->line3 == NULL) {
+		return 0;
+	}
+
+	if (strncmp("\txchgq %r", window->line1, 9) != 0 &&
+	    strncmp("\txchgq %r", window->line3, 9) != 0) {
+		return 0;
+	}
+
+	if (window->line1[9] == window->line3[15] &&
+	    window->line1[10] == window->line3[16] &&
+	    window->line1[15] == window->line3[9] &&
+	    window->line1[16] == window->line3[10] &&
+	    window->line1[17] == '\n' &&
+	    window->line1[17] == window->line3[17] &&
+	    window->line2[7] == window->line1[8] &&
+	    window->line2[8] == window->line1[9] &&
+	    window->line2[9] == window->line1[10]) {
+		free(window->line1);
+		window->line1 = xstrdup(window->line2);
+
+		free(window->line2);
+		window->line2 = NULL;
+
+		window->line1[7] = window->line3[8];
+		window->line1[8] = window->line3[9];
+		window->line1[9] = window->line3[10];
+
+		free(window->line3);
+		window->line3 = NULL;
+
+		return 1;
+	}
+
+	return 0;
+}
+
+static int
 three(struct peephole *window)
 {
+
+	if (xchgq(window))
+		return 1;
 
 	return mov(window);
 }
