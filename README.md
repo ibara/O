@@ -3,9 +3,6 @@ O
 `O` is a peephole optimizer for
 [qbe](https://c9x.me/compile/).
 
-It is meant to be used in conjunction with
-[cproc](https://sr.ht/~mcf/cproc/).
-
 Why?
 ----
 `O` is the subject of two
@@ -24,7 +21,7 @@ and
 Running
 -------
 ```
-usage: O in.s [-o out.s]
+usage: O [-o out.s] [in.s]
 ```
 
 Output is listed on `stdout` unless `-o` is passed on the command line.
