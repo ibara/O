@@ -1,0 +1,77 @@
+.\"
+.\" O - peephole optimizer
+.\"
+.\" Copyright (c) 2025 Brian Callahan <bcallah@openbsd.org>
+.\"
+.\" Permission to use, copy, modify, and distribute this software for any
+.\" purpose with or without fee is hereby granted, provided that the above
+.\" copyright notice and this permission notice appear in all copies.
+.\"
+.\" THE SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+.\" WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF
+.\" MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+.\" ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+.\" WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
+.\" ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+.\" OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+.\"
+.Dd September 1, 2025
+.Dt O 1
+.Os
+.Sh NAME
+.Nm O
+.Nd peephole optimizer
+.Sh SYNOPSIS
+.Nm
+.Op Fl t Ar target
+.Op Fl o Ar out.s
+.Op Ar in.s
+.Sh DESCRIPTION
+.Nm
+is a utility that optimizes assembly language files.
+By default,
+.Nm
+reads from
+.Ar stdin
+and outputs to
+.Ar stdout .
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl t Ar target
+Select CPU architecture
+.Ar target .
+Acceptable values for
+.Ar target
+are
+.Sy arm64
+and
+.Sy x64 .
+The default value of
+.Ar target
+is selected to match the build machine at build-time.
+.It Fl o Ar out.s
+Write output to
+.Ar out.s
+instead of
+.Ar stdout .
+.El
+.Sh EXIT STATUS
+The
+.Nm
+utility exits 0 on success, and >0 if an error occurs.
+.Sh EXAMPLES
+Optimize an assembly language file and write to
+.Sy stdout .
+.Pp
+.Dl O in.s
+.Pp
+Use
+.Nm
+as part of a larger compilation pipeline.
+.Pp
+.Dl qbe file.ssa | O | as -o file.o -
+.Sh AUTHORS
+.Nm
+was written by
+.An Brian Callahan Aq Mt bcallah@openbsd.org .
