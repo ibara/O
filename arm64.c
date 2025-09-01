@@ -20,9 +20,47 @@
 
 #include "O.h"
 
+static void
+add(struct peephole *window)
+{
+	int c, i = 0, j = 0, r;
+	char imm[3];
+
+	if (window->line1 == NULL)
+		return;
+
+	if (strncmp("\tadd\tx", window->line1, 6) == 0) {
+		c = window->line1[i++];
+		while (c != ',')
+			c = window->line1[i++];
+		++i;
+		c = window->line1[i++];
+		while (c != ',')
+			c = window->line1[i++];
+		r = i;
+		++i;
+		c = window->line1[i++];
+		while (c != '\n') {
+			if (j == 2)
+				return;
+			imm[j++] = c;
+			c = window->line1[i++];
+		}
+		if (strcmp(imm, "#0") == 0) {
+			window->line1[1] = 'm';
+			window->line1[2] = 'o';
+			window->line1[3] = 'v';
+			window->line1[r - 1] = '\n';
+			window->line1[r] = '\0';
+		}
+	}
+}
+
 void
 one(struct peephole *window)
 {
+
+	add(window);
 }
 
 static int
