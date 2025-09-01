@@ -14,7 +14,6 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -36,22 +35,22 @@ mov(struct peephole *window)
 
 	if (strncmp("\tmov\tx", window->line1, 6) != 0 ||
 	    strncmp("\tmov\tx", window->line2, 6) != 0) {
-			return 0;
+		return 0;
 	}
 
 	(void) memset(r1, 0, 4);
 
-	c = window->line1[i + 6];
+	c = window->line1[i + 5];
 
-	while (c != ',' && c != ' ' && c != '\n') {
+	while (c != ',' && c != ' ') {
 		if (i == 3)
 			return 0;
 		r1[i++] = c;
-		c = window->line1[i + 6];
+		c = window->line1[i + 5];
 	}
 
 	while (c == ',' || c == ' ') {
-		c = window->line1[i + 6];
+		c = window->line1[i + 5];
 		if (c == '\n')
 			return 0;
 		++i;
@@ -59,48 +58,43 @@ mov(struct peephole *window)
 
 	(void) memset(r2, 0, 4);
 
-    while (c != ',' && c != ' ' && c != '\n') {
+	while (c != '\n') {
 		if (j == 3)
 			return 0;
 		r2[j++] = c;
-		c = window->line1[i + 6];
+		c = window->line1[i + 5];
 		++i;
 	}
-
-	if (c != '\n')
-		return 0;
 
 	i = 0;
 	(void) memset(r3, 0, 4);
 
-	c = window->line2[i + 6];
+	c = window->line2[i + 5];
 
-	while (c != ',' && c != ' ' && c != '\n') {
+	while (c != ',' && c != ' ') {
 		if (i == 3)
 			return 0;
 		r3[i++] = c;
-		c = window->line2[i + 6];
+		c = window->line2[i + 5];
 	}
 
 	while (c == ',' || c == ' ') {
-		c = window->line2[i + 6];
+		c = window->line2[i + 5];
 		if (c == '\n')
 			return 0;
 		++i;
 	}
 
 	j = 0;
+	(void) memset(r4, 0, 4);
 
-    while (c != ',' && c != ' ' && c != '\n') {
+	while (c != '\n') {
 		if (j == 3)
 			return 0;
-		r1[j++] = c;
-		c = window->line2[i + 6];
+		r4[j++] = c;
+		c = window->line2[i + 5];
 		++i;
 	}
-
-	if (c != '\n')
-		return 0;
 
 	if (r1[0] != 'x' || r2[0] != 'x' || r3[0] != 'x' || r4[0] != 'x')
 		return 0;
