@@ -37,7 +37,7 @@ xstrdup(const char *s)
 	return p;
 }
 
-static int
+int
 fillwindow(struct peephole *window, FILE *fp)
 {
 	size_t size = 0;
@@ -58,7 +58,7 @@ fillwindow(struct peephole *window, FILE *fp)
 	return 1;
 }
 
-static void
+void
 shiftwindow(struct peephole *window)
 {
 
@@ -69,82 +69,68 @@ shiftwindow(struct peephole *window)
 	window->line2 = xstrdup(window->line3);
 }
 
-static void
-O(FILE *fp)
-{
-	struct peephole window;
-	int ret;
-
-	window.line1 = NULL;
-	window.line2 = NULL;
-	window.line3 = NULL;
-
-	while (fillwindow(&window, fp)) {
-again:
-		ret = three(&window);
-		if (ret == 0)
-			ret = two(&window);
-		one(&window);
-
-		if (ret == 1) {
-			if (fillwindow(&window, fp))
-				goto again;
-		}
-
-		if (window.line1 != NULL)
-			(void) fputs(window.line1, stdout);
-
-		shiftwindow(&window);
-	}
-
-	free(window.line3);
-	window.line3 = NULL;
-
-	while (window.line1 != NULL) {
-		one(&window);
-
-		if (window.line1 != NULL)
-			(void) fputs(window.line1, stdout);
-
-		shiftwindow(&window);
-	}
-}
-
 int
 main(int argc, char *argv[])
 {
 	FILE *fp;
-	int t;
+	const char *input = NULL, *target = TARGET;
+	int arch, i, in = 0, out = 0;
 
-	if (argc == 4) {
-		if (strcmp(argv[2], "-o") != 0)
-			goto usage;
-
-		if (freopen(argv[3], "w+", stdout) == NULL) {
-			(void) fprintf(stderr, "O: error: couldn't open %s\n",
-			    argv[3]);
-		}
-	} else if (argc != 2) {
+	for (i = 1; i < argc; ++i) {
+		if (strcmp(argv[i], "-o") == 0) {
+			if (argv[++i] == NULL) {
 usage:
-		(void) fputs("usage: O in.s [-o out.s]\n", stderr);
+				(void) fputs("usage: O [-o out.s] [in.s]\n",
+				    stderr);
+				return 1;
+			}
+			if (out++)
+				goto usage;
+			if (freopen(argv[i], "w+", stdout) == NULL) {
+				(void) fprintf(stderr,
+				    "O: error: couldn't open %s\n", argv[i]);
+			}
+		} else if (strcmp(argv[i], "-t") == 0) {
+			if (argv[++i] == NULL)
+				goto usage;
+			target = argv[i];
+		} else {
+			if (in++)
+				goto usage;
+			if (strcmp(argv[i], "-") != 0)
+				input = argv[i];
+		}
+	}
 
+	if (strcmp(target, "arm64") == 0 || strcmp(target, "aarch64") == 0) {
+		arch = T_ARM64;
+	} else if (strcmp(target, "x86_64") == 0 ||
+	    strcmp(target, "amd64") == 0 || strcmp(target, "x64") == 0) {
+		arch = T_X64;
+	} else {
+		(void) fputs("O: error: values for -t are `arm64' and `x64'\n",
+		    stderr);
 		return 1;
 	}
 
-	if (!strcmp(argv[1], "-")) {
-		O(stdin);
+	if (input == NULL) {
+		if (arch == T_X64)
+			x64(stdin);
+		else if (arch == T_ARM64)
+			arm64(stdin);
 
 		return 0;
 	}
 
-	if ((fp = fopen(argv[1], "r")) == NULL) {
-		(void) fprintf(stderr, "O: error: couldn't open %s\n",
-		    argv[1]);
-
+	if ((fp = fopen(input, "r")) == NULL) {
+		(void) fprintf(stderr, "O: error: couldn't open %s\n", input);
 		return 1;
 	}
 
-	O(fp);
+	if (arch == T_ARM64)
+		arm64(fp);
+	else if (arch == T_X64)
+		x64(fp);
 
 	(void) fclose(fp);
 

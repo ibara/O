@@ -14,13 +14,17 @@
  * OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
  */
 
+#define T_ARM64		0
+#define T_X64		1
+
 struct peephole {
 	char *line1;
 	char *line2;
 	char *line3;
 };
 
-extern void one(struct peephole *);
-extern int three(struct peephole *);
-extern int two(struct peephole *);
+extern void arm64(FILE *);
+extern int fillwindow(struct peephole *, FILE *);
+extern void shiftwindow(struct peephole *);
+extern void x64(FILE *);
 extern char *xstrdup(const char *);

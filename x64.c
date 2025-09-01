@@ -637,7 +637,7 @@ success:
 	return 1;
 }
 
-void
+static void
 one(struct peephole *window)
 {
 
@@ -665,7 +665,7 @@ one(struct peephole *window)
 	(void) imull(window);
 }
 
-int
+static int
 two(struct peephole *window)
 {
 
@@ -767,7 +767,7 @@ xchgq(struct peephole *window)
 	return 0;
 }
 
-int
+static int
 three(struct peephole *window)
 {
 
@@ -775,4 +775,45 @@ three(struct peephole *window)
 		return 1;
 
 	return mov(window);
+}
+
+void
+x64(FILE *fp)
+{
+	struct peephole window;
+	int ret;
+
+	window.line1 = NULL;
+	window.line2 = NULL;
+	window.line3 = NULL;
+
+	while (fillwindow(&window, fp)) {
+again:
+		ret = three(&window);
+		if (ret == 0)
+			ret = two(&window);
+		one(&window);
+
+		if (ret == 1) {
+			if (fillwindow(&window, fp))
+				goto again;
+		}
+
+		if (window.line1 != NULL)
+			(void) fputs(window.line1, stdout);
+
+		shiftwindow(&window);
+	}
+
+	free(window.line3);
+	window.line3 = NULL;
+
+	while (window.line1 != NULL) {
+		one(&window);
+
+		if (window.line1 != NULL)
+			(void) fputs(window.line1, stdout);
+
+		shiftwindow(&window);
+	}
 }

@@ -3,24 +3,18 @@
 PREFIX ?=	/usr/local
 
 CC ?=		cc
-CFLAGS ?=	-g -O2
+CFLAGS =	-g -O2 -DTARGET=${TARGET}
 
 PROG =	O
-OBJS =	O.o
+OBJS =	O.o arm64.o x64.o
 
-ARM64 =	arm64.o
-X64 =	x64.o
+TARGET =	"\"`${CC} -dumpmachine | cut -d '-' -f 1`\""
 
-all: arm64 x64
-
-arm64: ${OBJS} ${ARM64}
-	${CC} ${LDFLAGS} -o ${PROG}.$@ ${OBJS} ${ARM64}
-
-x64: ${OBJS} ${X64}
-	${CC} ${LDFLAGS} -o ${PROG}.$@ ${OBJS} ${X64}
+all: ${OBJS}
+	${CC} ${LDFLAGS} -o ${PROG} ${OBJS}
 
 install:
 	install -c -S -s -m 755 ${PROG} ${PREFIX}/bin
 
 clean:
-	rm -f ${PROG}.arm64 ${PROG}.x64 ${OBJS} ${ARM64} ${X64} *.core
+	rm -f ${PROG} ${OBJS} ${PROG}.core
