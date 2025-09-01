@@ -125,6 +125,9 @@ merge_immediate(struct peephole *window)
 		++i;
 	}
 
+	if (imm[0] != '#')
+		return 0;
+
 	i = atoi(imm + 1);
 	if (i < 0 || i > 4095)
 		return 0;
