@@ -31,14 +31,23 @@ add(struct peephole *window)
 
 	if (strncmp("\tadd\tx", window->line1, 6) == 0) {
 		c = window->line1[i++];
-		while (c != ',')
+		while (c != ',') {
+			if (c == '\n' || c == '\0')
+				return;
 			c = window->line1[i++];
+		}
 		++i;
 		c = window->line1[i++];
-		while (c != ',')
+		while (c != ',') {
+			if (c == '\n' || c == '\0')
+				return;
 			c = window->line1[i++];
+		}
 		r = i;
 		++i;
+
+		(void) memset(imm, 0, 3);
+
 		c = window->line1[i++];
 		while (c != '\n') {
 			if (j == 2)
@@ -170,6 +179,104 @@ merge_immediate(struct peephole *window)
 }
 
 static int
+eor(struct peephole *window)
+{
+	int c, i = 0, j = 0;
+	char buf[32], imm[4], r1[4], r2[4], r3[4], r4[4];
+
+	if (window->line1 == NULL || window->line2 == NULL)
+		return 0;
+
+	if (strncmp("\tmov\tx", window->line1, 6) != 0 ||
+	    strncmp("\teor\tx", window->line2, 6) != 0) {
+		return 0;
+	}
+
+	(void) memset(r1, 0, 4);
+
+	c = window->line1[i + 5];
+
+	while (c != ',') {
+		if (i == 3)
+			return 0;
+		r1[i++] = c;
+		c = window->line1[i + 5];
+	}
+
+	i += 2;
+	c = window->line1[i + 5];
+
+	(void) memset(imm, 0, 4);
+
+	while (c != '\n') {
+		if (j == 3)
+			return 0;
+		imm[j++] = c;
+		++i;
+		c = window->line1[i + 5];
+	}
+
+	if (strcmp(imm, "#-1") != 0)
+		return 0;
+
+	i = 0;
+	c = window->line2[i + 5];
+
+	(void) memset(r2, 0, 4);
+
+	while (c != ',') {
+		if (i == 3)
+			return 0;
+		r2[i++] = c;
+		c = window->line2[i + 5];
+	}
+
+	i += 2;
+	c = window->line2[i + 5];
+	j = 0;
+
+	(void) memset(r3, 0, 4);
+
+	while (c != ',') {
+		if (j == 3)
+			return 0;
+		r3[j++] = c;
+		++i;
+		c = window->line2[i + 5];
+	}
+
+	i += 2;
+	c = window->line2[i + 5];
+	j = 0;
+
+	(void) memset(r4, 0, 4);
+
+	while (c != '\n') {
+		if (j == 3)
+			return 0;
+		r4[j++] = c;
+		++i;
+		c = window->line2[i + 5];
+	}
+
+	if (strcmp(r1, r4) != 0 || strcmp(r2, r3) != 0)
+		return 0;
+
+	(void) snprintf(buf, 32, "\tmvn\t%s, %s\n", r2, r2);
+
+	free(window->line1);
+	window->line1 = xstrdup(buf);
+
+	free(window->line2);
+	window->line2 = xstrdup(window->line3);
+
+	free(window->line3);
+	window->line3 = NULL;
+
+	return 1;
+}
+
+static int
 mov(struct peephole *window)
 {
 	int c, i = 0, j = 0;
@@ -261,6 +368,9 @@ two(struct peephole *window)
 {
 
 	if (merge_immediate(window))
+		return 1;
+
+	if (eor(window))
 		return 1;
 
 	return mov(window);
