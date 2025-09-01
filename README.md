@@ -21,7 +21,7 @@ and
 Running
 -------
 ```
-usage: O [-o out.s] [in.s]
+usage: O [-t target] [-o out.s] [in.s]
 ```
 
 Output is listed on `stdout` unless `-o` is passed on the command line.
