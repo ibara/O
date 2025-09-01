@@ -47,9 +47,6 @@ add(struct peephole *window)
 		r = i;
 		++i;
 
-		if (strcmp(r1, "sp") != 0)
-			return;
-
 		(void) memset(imm, 0, 3);
 
 		j = 0;
