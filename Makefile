@@ -23,4 +23,4 @@ install:
 	install -c -S -s -m 755 ${PROG} ${PREFIX}/bin
 
 clean:
-	rm -f ${PROG}.* ${OBJS} ${ARM64} ${X64} *.core
+	rm -f ${PROG}.arm64 ${PROG}.x64 ${OBJS} ${ARM64} ${X64} *.core

@@ -73,6 +73,7 @@ static void
 O(FILE *fp)
 {
 	struct peephole window;
+	int ret;
 
 	window.line1 = NULL;
 	window.line2 = NULL;
